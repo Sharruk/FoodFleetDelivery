@@ -3,9 +3,9 @@
 {% block title %}Login - EZFOODZ{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
+<div class="row justify-content-center mt-4">
     <div class="col-md-6 col-lg-5">
-        <div class="card shadow">
+        <div class="card border-0 mb-4">
             <div class="card-header bg-ez-primary text-white text-center py-3">
                 <h4 class="mb-0">Login to EZFOODZ</h4>
             </div>
@@ -41,7 +41,7 @@
                     </div>
                 </form>
                 
-                <hr class="my-4">
+                <hr class="my-4 border-secondary">
                 
                 <div class="text-center">
                     <p>Don't have an account? <a href="{{ url_for('register') }}" class="text-ez-primary">Register here</a></p>
@@ -49,30 +49,40 @@
             </div>
         </div>
         
-        <div class="card mt-4">
+        <div class="card border-0">
+            <div class="card-header bg-ez-primary text-white">
+                <h5 class="mb-0">Test Accounts</h5>
+            </div>
             <div class="card-body">
-                <h5 class="card-title">Test Accounts</h5>
-                <p class="card-text small text-muted mb-2">For demo purposes, use these credentials:</p>
-                <ul class="list-group list-group-flush small">
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <div>
-                            <strong>Customer:</strong> customer@example.com
-                        </div>
-                        <span>password</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <div>
-                            <strong>Restaurant:</strong> restaurant@example.com
-                        </div>
-                        <span>password</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <div>
-                            <strong>Delivery:</strong> delivery@example.com
-                        </div>
-                        <span>password</span>
-                    </li>
-                </ul>
+                <p class="text-ez-gray mb-3">For demo purposes, use these credentials:</p>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Role</th>
+                                <th>Email</th>
+                                <th>Password</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Customer</td>
+                                <td>customer@example.com</td>
+                                <td>password</td>
+                            </tr>
+                            <tr>
+                                <td>Restaurant</td>
+                                <td>restaurant@example.com</td>
+                                <td>password</td>
+                            </tr>
+                            <tr>
+                                <td>Delivery</td>
+                                <td>delivery@example.com</td>
+                                <td>password</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
