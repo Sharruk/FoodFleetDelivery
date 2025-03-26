@@ -300,6 +300,17 @@ def add_to_cart():
         })
     
     session['cart'] = cart
+    
+    # Set cart notification flag for toast
+    session['cart_notification'] = True
+    
+    # Store the item details in session for display in notification
+    session['last_added_item'] = {
+        'name': menu_item.name,
+        'quantity': quantity,
+        'price': menu_item.price
+    }
+    
     flash(f'Added {quantity} {menu_item.name} to your cart.', 'success')
     
     return redirect(request.referrer)
@@ -314,6 +325,10 @@ def cart():
     
     restaurant_id = session.get('restaurant_id')
     restaurant = Restaurant.query.get_or_404(restaurant_id)
+    
+    # Clear any cart notification data when viewing the cart
+    session.pop('cart_notification', None)
+    session.pop('last_added_item', None)
     
     # Calculate cart totals
     cart_items = session.get('cart', [])
