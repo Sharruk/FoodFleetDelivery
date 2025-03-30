@@ -1,0 +1,599 @@
+{% extends 'base.html' %}
+
+{% block title %}Delivery Dashboard - EZFOODZ{% endblock %}
+
+{% block styles %}
+<style>
+    .status-badge {
+        font-size: 0.75rem;
+        padding: 0.35rem 0.65rem;
+    }
+    .order-card {
+        transition: all 0.3s ease;
+        border: none;
+        margin-bottom: 1rem;
+    }
+    .order-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+    .order-card .card-header {
+        padding: 0.75rem 1.25rem;
+        border-bottom: none;
+    }
+    .order-ribbon {
+        position: absolute;
+        top: 0;
+        right: 1rem;
+        padding: 0.5rem 1rem;
+        font-size: 0.8rem;
+        color: white;
+        clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 85%, 0 100%);
+        height: 60px;
+        min-width: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1;
+    }
+    .ready-for-pickup {
+        background-color: #FA5000;
+    }
+    .picking-up {
+        background-color: #00B74A;
+    }
+    .delivering {
+        background-color: #1266F1;
+    }
+    .map-preview {
+        height: 120px;
+        background-color: #343a40;
+        background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23292d33' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        border-radius: 0.25rem;
+        position: relative;
+        overflow: hidden;
+    }
+    .map-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0,0,0,0.5);
+        transition: opacity 0.3s;
+    }
+    .map-preview:hover .map-overlay {
+        opacity: 1;
+    }
+    .quick-stat {
+        text-align: center;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        background-color: #212529;
+        transition: all 0.3s ease;
+        margin-bottom: 1rem;
+    }
+    .quick-stat:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    .quick-stat .icon {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        color: #FA5000;
+    }
+    .quick-stat .stat-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    .quick-stat .stat-label {
+        color: #adb5bd;
+        font-size: 0.9rem;
+    }
+    .online-toggle {
+        border: none;
+        padding: 1rem;
+        text-align: center;
+        border-radius: 0.5rem;
+        background-color: #212529;
+        transition: all 0.3s ease;
+    }
+    .online-toggle.active {
+        background-color: #00B74A;
+    }
+    .online-toggle .toggle-status {
+        font-weight: 600;
+        margin-top: 0.5rem;
+    }
+    .toggle-button {
+        width: 60px;
+        height: 30px;
+        background-color: #495057;
+        border-radius: 30px;
+        padding: 5px;
+        position: relative;
+        margin: 1rem auto;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .toggle-button.active {
+        background-color: #00B74A;
+    }
+    .toggle-button .toggle-handle {
+        width: 20px;
+        height: 20px;
+        background-color: white;
+        border-radius: 50%;
+        position: absolute;
+        left: 5px;
+        transition: all 0.3s ease;
+    }
+    .toggle-button.active .toggle-handle {
+        left: 35px;
+    }
+    #earnings-chart {
+        height: 250px;
+        width: 100%;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2 class="mb-0">
+            <i class="fas fa-motorcycle text-ez-primary me-2"></i> Delivery Dashboard
+        </h2>
+        <p class="text-muted">Manage your deliveries and track your earnings</p>
+    </div>
+    <div class="col-md-4 text-md-end">
+        <div class="online-toggle {{ 'active' if is_online else '' }}" id="deliveryStatusToggle">
+            <div>
+                <span class="badge bg-light text-dark">Delivery Status</span>
+            </div>
+            <div class="toggle-button {{ 'active' if is_online else '' }}" id="toggleButton">
+                <div class="toggle-handle"></div>
+            </div>
+            <div class="toggle-status" id="toggleStatus">
+                {{ 'Online' if is_online else 'Offline' }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="quick-stat">
+            <div class="icon">
+                <i class="fas fa-route"></i>
+            </div>
+            <div class="stat-value">{{ total_deliveries }}</div>
+            <div class="stat-label">Total Deliveries</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="quick-stat">
+            <div class="icon">
+                <i class="fas fa-wallet"></i>
+            </div>
+            <div class="stat-value">₹{{ "%.2f"|format(total_earnings) }}</div>
+            <div class="stat-label">Total Earnings</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="quick-stat">
+            <div class="icon">
+                <i class="fas fa-star"></i>
+            </div>
+            <div class="stat-value">{{ "%.1f"|format(average_rating) }}</div>
+            <div class="stat-label">Average Rating</div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-0 mb-4">
+            <div class="card-header bg-ez-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line me-2"></i> Earnings Overview
+                </h5>
+                <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-outline-light active" id="weeklyEarnings">Weekly</button>
+                    <button type="button" class="btn btn-outline-light" id="monthlyEarnings">Monthly</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <canvas id="earnings-chart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if available_orders %}
+<div class="row mt-2">
+    <div class="col-12">
+        <div class="card border-0">
+            <div class="card-header bg-ez-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-bell me-2"></i> Available Orders ({{ available_orders|length }})
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for order in available_orders %}
+                    <div class="col-md-6">
+                        <div class="card order-card bg-dark">
+                            <div class="order-ribbon ready-for-pickup">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">Order #{{ order.id }}</h6>
+                                <span class="badge bg-success status-badge">Ready for pickup</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-store text-ez-primary me-2"></i>
+                                        <div>
+                                            <div class="fw-bold">{{ order.restaurant.name }}</div>
+                                            <div class="small text-muted">{{ order.restaurant.address }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-map-marker-alt text-ez-primary me-2"></i>
+                                        <div>
+                                            <div class="fw-bold">Delivery Location</div>
+                                            <div class="small text-muted">{{ order.delivery_address }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="map-preview mb-3">
+                                    <div class="map-overlay">
+                                        <button class="btn btn-sm btn-light">
+                                            <i class="fas fa-map-marked-alt me-1"></i> View Route
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <i class="fas fa-receipt me-1"></i>
+                                        <span>{{ order.items.count() }} items</span>
+                                    </div>
+                                    <div>
+                                        <i class="fas fa-coins text-warning me-1"></i>
+                                        <span>₹{{ "%.2f"|format(order.total_amount) }}</span>
+                                    </div>
+                                </div>
+                                
+                                <button class="btn btn-ez-primary w-100 accept-order" data-order-id="{{ order.id }}">
+                                    <i class="fas fa-check-circle me-1"></i> Accept Order
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if my_orders %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-0">
+            <div class="card-header bg-ez-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-route me-2"></i> My Active Deliveries ({{ my_orders|length }})
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for order in my_orders %}
+                    <div class="col-md-6">
+                        <div class="card order-card bg-dark">
+                            <div class="order-ribbon {{ 'picking-up' if order.status == 'picking' else 'delivering' }}">
+                                <i class="{{ 'fas fa-box' if order.status == 'picking' else 'fas fa-motorcycle' }}"></i>
+                            </div>
+                            <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">Order #{{ order.id }}</h6>
+                                <span class="badge {{ 'bg-info' if order.status == 'picking' else 'bg-primary' }} status-badge">
+                                    {{ 'Picking Up' if order.status == 'picking' else 'Delivering' }}
+                                </span>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-store text-ez-primary me-2"></i>
+                                        <div>
+                                            <div class="fw-bold">{{ order.restaurant.name }}</div>
+                                            <div class="small text-muted">{{ order.restaurant.address }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-map-marker-alt text-ez-primary me-2"></i>
+                                        <div>
+                                            <div class="fw-bold">{{ order.customer.username }}</div>
+                                            <div class="small text-muted">{{ order.delivery_address }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="map-preview mb-3">
+                                    <div class="map-overlay">
+                                        <a href="{{ url_for('tracking', order_id=order.id) }}" class="btn btn-sm btn-light">
+                                            <i class="fas fa-location-arrow me-1"></i> Track Delivery
+                                        </a>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <div>
+                                        <i class="fas fa-receipt me-1"></i>
+                                        <span>{{ order.items.count() }} items</span>
+                                    </div>
+                                    <div>
+                                        <i class="fas fa-coins text-warning me-1"></i>
+                                        <span class="fw-bold">₹{{ "%.2f"|format(order.total_amount) }}</span>
+                                    </div>
+                                </div>
+                                
+                                {% if order.status == 'picking' %}
+                                <button class="btn btn-ez-primary w-100 update-status" data-order-id="{{ order.id }}" data-status="delivering">
+                                    <i class="fas fa-motorcycle me-1"></i> Start Delivery
+                                </button>
+                                {% elif order.status == 'delivering' %}
+                                <button class="btn btn-success w-100 update-status" data-order-id="{{ order.id }}" data-status="completed">
+                                    <i class="fas fa-check-circle me-1"></i> Complete Delivery
+                                </button>
+                                {% endif %}
+                                
+                                <div class="mt-2">
+                                    <a href="tel:{{ order.customer.phone }}" class="btn btn-sm btn-outline-ez-primary w-100">
+                                        <i class="fas fa-phone-alt me-2"></i> Call Customer
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if completed_orders %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-0">
+            <div class="card-header bg-ez-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-history me-2"></i> Recent Deliveries
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Restaurant</th>
+                                <th>Customer</th>
+                                <th>Amount</th>
+                                <th>Date</th>
+                                <th>Earning</th>
+                                <th>Rating</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in completed_orders %}
+                            <tr>
+                                <td>#{{ order.id }}</td>
+                                <td>{{ order.restaurant.name }}</td>
+                                <td>{{ order.customer.username }}</td>
+                                <td>₹{{ "%.2f"|format(order.total_amount) }}</td>
+                                <td>{{ order.updated_at.strftime('%d %b, %H:%M') }}</td>
+                                <td class="text-success">₹{{ "%.2f"|format(order.total_amount * 0.10) }}</td>
+                                <td>
+                                    {% if order.delivery_rating %}
+                                        <div class="text-warning">
+                                            {% for i in range(order.delivery_rating) %}
+                                            <i class="fas fa-star"></i>
+                                            {% endfor %}
+                                            {% for i in range(5 - order.delivery_rating) %}
+                                            <i class="far fa-star"></i>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted">Not rated</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Toggle online status
+        const toggleButton = document.getElementById('toggleButton');
+        const toggleStatus = document.getElementById('toggleStatus');
+        const deliveryStatusToggle = document.getElementById('deliveryStatusToggle');
+        
+        toggleButton.addEventListener('click', function() {
+            toggleButton.classList.toggle('active');
+            deliveryStatusToggle.classList.toggle('active');
+            
+            const isOnline = toggleButton.classList.contains('active');
+            toggleStatus.textContent = isOnline ? 'Online' : 'Offline';
+            
+            // Update status on server
+            fetch('/api/delivery/update_status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    is_online: isOnline
+                })
+            });
+        });
+        
+        // Accept order functionality
+        const acceptButtons = document.querySelectorAll('.accept-order');
+        acceptButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const orderId = this.getAttribute('data-order-id');
+                
+                // Update order status
+                fetch('/api/order/update_status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        order_id: orderId,
+                        status: 'picking'
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.href = `/tracking/${orderId}`;
+                    }
+                });
+            });
+        });
+        
+        // Update order status
+        const updateButtons = document.querySelectorAll('.update-status');
+        updateButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const orderId = this.getAttribute('data-order-id');
+                const status = this.getAttribute('data-status');
+                
+                // Update order status
+                fetch('/api/order/update_status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        order_id: orderId,
+                        status: status
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        if (status === 'completed') {
+                            window.location.reload();
+                        } else {
+                            window.location.href = `/tracking/${orderId}`;
+                        }
+                    }
+                });
+            });
+        });
+        
+        // Earnings Chart
+        const ctx = document.getElementById('earnings-chart').getContext('2d');
+        
+        // Sample data - this would come from your backend
+        const weeklyData = {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            datasets: [{
+                label: 'Daily Earnings (₹)',
+                data: [150, 230, 180, 320, 260, 420, 350],
+                backgroundColor: 'rgba(250, 80, 0, 0.2)',
+                borderColor: 'rgba(250, 80, 0, 1)',
+                borderWidth: 2,
+                tension: 0.4,
+                fill: true
+            }]
+        };
+        
+        const monthlyData = {
+            labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+            datasets: [{
+                label: 'Weekly Earnings (₹)',
+                data: [1200, 1450, 1320, 1680],
+                backgroundColor: 'rgba(250, 80, 0, 0.2)',
+                borderColor: 'rgba(250, 80, 0, 1)',
+                borderWidth: 2,
+                tension: 0.4,
+                fill: true
+            }]
+        };
+        
+        const chartOptions = {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: '#adb5bd'
+                    }
+                },
+                x: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: '#adb5bd'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#adb5bd'
+                    }
+                }
+            }
+        };
+        
+        const earningsChart = new Chart(ctx, {
+            type: 'line',
+            data: weeklyData,
+            options: chartOptions
+        });
+        
+        // Switch between weekly and monthly views
+        document.getElementById('weeklyEarnings').addEventListener('click', function() {
+            this.classList.add('active');
+            document.getElementById('monthlyEarnings').classList.remove('active');
+            earningsChart.data = weeklyData;
+            earningsChart.update();
+        });
+        
+        document.getElementById('monthlyEarnings').addEventListener('click', function() {
+            this.classList.add('active');
+            document.getElementById('weeklyEarnings').classList.remove('active');
+            earningsChart.data = monthlyData;
+            earningsChart.update();
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,328 @@
+{% extends 'base.html' %}
+
+{% block title %}Order Tracking - EZFOODZ{% endblock %}
+
+{% block styles %}
+<style>
+    #delivery-map {
+        height: 400px;
+        width: 100%;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    .tracking-info {
+        background-color: #212529;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    .tracking-info .icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: rgba(255, 94, 0, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #FF5E00;
+        margin-right: 15px;
+    }
+    .delivery-status {
+        position: relative;
+    }
+    .delivery-status::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 19px;
+        width: 2px;
+        height: 100%;
+        background-color: rgba(255, 255, 255, 0.1);
+        z-index: 0;
+    }
+    .status-item {
+        position: relative;
+        z-index: 1;
+        margin-bottom: 25px;
+    }
+    .status-indicator {
+        position: absolute;
+        left: 0;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #212529;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .status-indicator.active {
+        background-color: #FF5E00;
+        color: white;
+    }
+    .status-indicator.completed {
+        background-color: #20c997;
+        color: white;
+    }
+    .status-content {
+        padding-left: 60px;
+        min-height: 40px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    .status-text {
+        font-weight: 500;
+    }
+    .status-time {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+    .order-info {
+        background-color: #212529;
+        border-radius: 8px;
+        padding: 15px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4">
+            <i class="fas fa-map-marked-alt text-ez-primary me-2"></i> 
+            Live Order Tracking
+        </h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <!-- Map container -->
+        <div class="card border-0 mb-4">
+            <div class="card-body p-0">
+                <div id="delivery-map"></div>
+            </div>
+        </div>
+
+        <!-- Tracking status -->
+        <div class="card border-0 mb-4">
+            <div class="card-header bg-ez-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-truck me-2"></i> Delivery Status
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="tracking-status" class="mb-3">
+                    <span class="badge bg-secondary">
+                        <i class="fas fa-spinner fa-spin me-1"></i> Connecting...
+                    </span>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <div class="d-flex align-items-center">
+                            <div class="icon">
+                                <i class="fas fa-route"></i>
+                            </div>
+                            <div>
+                                <div class="text-muted small">Distance</div>
+                                <div id="distance-info" class="fw-bold">Calculating...</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="d-flex align-items-center">
+                            <div class="icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div>
+                                <div class="text-muted small">Estimated Time</div>
+                                <div id="eta-info" class="fw-bold">Calculating...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="delivery-status ps-3">
+                    <div class="status-item">
+                        <div class="status-indicator {{ 'completed' if order.status in ['preparing', 'ready', 'picking', 'delivering', 'completed'] else 'active' if order.status == 'pending' else '' }}">
+                            <i class="fas fa-clipboard-check"></i>
+                        </div>
+                        <div class="status-content">
+                            <div class="status-text">Order Confirmed</div>
+                            <div class="status-time">{{ order.created_at.strftime('%I:%M %p') }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="status-item">
+                        <div class="status-indicator {{ 'completed' if order.status in ['ready', 'picking', 'delivering', 'completed'] else 'active' if order.status == 'preparing' else '' }}">
+                            <i class="fas fa-utensils"></i>
+                        </div>
+                        <div class="status-content">
+                            <div class="status-text">Preparing Food</div>
+                            {% if order.status in ['ready', 'picking', 'delivering', 'completed'] %}
+                                <div class="status-time">{{ order.updated_at.strftime('%I:%M %p') }}</div>
+                            {% elif order.status == 'preparing' %}
+                                <div class="status-time">In progress</div>
+                            {% else %}
+                                <div class="status-time">Pending</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="status-item">
+                        <div class="status-indicator {{ 'completed' if order.status in ['picking', 'delivering', 'completed'] else 'active' if order.status == 'ready' else '' }}">
+                            <i class="fas fa-box"></i>
+                        </div>
+                        <div class="status-content">
+                            <div class="status-text">Ready for Pickup</div>
+                            {% if order.status in ['picking', 'delivering', 'completed'] %}
+                                <div class="status-time">{{ order.updated_at.strftime('%I:%M %p') }}</div>
+                            {% elif order.status == 'ready' %}
+                                <div class="status-time">Waiting for delivery partner</div>
+                            {% else %}
+                                <div class="status-time">Pending</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="status-item">
+                        <div class="status-indicator {{ 'completed' if order.status in ['delivering', 'completed'] else 'active' if order.status == 'picking' else '' }}">
+                            <i class="fas fa-motorcycle"></i>
+                        </div>
+                        <div class="status-content">
+                            <div class="status-text">Out for Delivery</div>
+                            {% if order.status in ['delivering', 'completed'] %}
+                                <div class="status-time">{{ order.updated_at.strftime('%I:%M %p') }}</div>
+                            {% elif order.status == 'picking' %}
+                                <div class="status-time">Delivery partner picking up</div>
+                            {% else %}
+                                <div class="status-time">Pending</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="status-item">
+                        <div class="status-indicator {{ 'completed' if order.status == 'completed' else 'active' if order.status == 'delivering' else '' }}">
+                            <i class="fas fa-home"></i>
+                        </div>
+                        <div class="status-content">
+                            <div class="status-text">Delivered</div>
+                            {% if order.status == 'completed' %}
+                                <div class="status-time">{{ order.updated_at.strftime('%I:%M %p') }}</div>
+                            {% elif order.status == 'delivering' %}
+                                <div class="status-time">On the way</div>
+                            {% else %}
+                                <div class="status-time">Pending</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Order details -->
+        <div class="card border-0 mb-4">
+            <div class="card-header bg-ez-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-receipt me-2"></i> Order #{{ order.id }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="text-muted mb-1">Restaurant</div>
+                    <div class="fw-bold">{{ order.restaurant.name }}</div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="text-muted mb-1">Items</div>
+                    {% for item in order.items %}
+                        <div class="d-flex justify-content-between mb-1">
+                            <div>{{ item.quantity }}x {{ item.menu_item.name }}</div>
+                            <div>₹{{ "%.2f"|format(item.price * item.quantity) }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <hr class="border-secondary my-3">
+                
+                <div class="d-flex justify-content-between mb-1">
+                    <div>Subtotal</div>
+                    <div>₹{{ "%.2f"|format(order.total_amount - 40 - (order.total_amount * 0.05)) }}</div>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
+                    <div>Delivery Fee</div>
+                    <div>₹40.00</div>
+                </div>
+                <div class="d-flex justify-content-between mb-3">
+                    <div>Tax (5%)</div>
+                    <div>₹{{ "%.2f"|format(order.total_amount * 0.05) }}</div>
+                </div>
+                
+                <div class="d-flex justify-content-between fw-bold">
+                    <div>Total</div>
+                    <div>₹{{ "%.2f"|format(order.total_amount) }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delivery details -->
+        <div class="card border-0 mb-4">
+            <div class="card-header bg-ez-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i> Delivery Details
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="text-muted mb-1">Delivery Address</div>
+                    <div class="fw-bold">{{ order.delivery_address }}</div>
+                </div>
+                
+                {% if order.delivery_partner %}
+                <div class="mb-3">
+                    <div class="text-muted mb-1">Delivery Partner</div>
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-user-circle fs-4 me-2 text-ez-primary"></i>
+                        <div>
+                            <div class="fw-bold">{{ order.delivery_partner.username }}</div>
+                            <div class="small">{{ order.delivery_partner.phone }}</div>
+                        </div>
+                    </div>
+                </div>
+                {% if current_user.role == 'customer' %}
+                <a href="tel:{{ order.delivery_partner.phone }}" class="btn btn-sm btn-outline-ez-primary w-100">
+                    <i class="fas fa-phone-alt me-2"></i> Call Delivery Partner
+                </a>
+                {% endif %}
+                {% else %}
+                <div class="text-muted">
+                    <i class="fas fa-hourglass-half me-2"></i> Waiting for delivery partner...
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Google Maps API -->
+<script src="https://maps.googleapis.com/maps/api/js?key={{ maps_api_key }}&libraries=places"></script>
+
+<!-- Delivery Tracking JS -->
+<script src="{{ url_for('static', filename='js/delivery_tracking.js') }}"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize tracking with order ID and user role
+        const tracking = initDeliveryTracking(
+            {{ order.id }}, 
+            {{ 'true' if current_user.role == 'delivery' else 'false' }}
+        );
+    });
+</script>
+{% endblock %}

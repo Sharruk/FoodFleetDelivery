@@ -1,0 +1,522 @@
+{% extends 'base.html' %}
+
+{% block title %}Restaurant Bot - EZFOODZ{% endblock %}
+
+{% block styles %}
+<style>
+    .bot-header {
+        background-color: #212529;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .bot-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background-color: #FF5E00;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 40px;
+        color: white;
+    }
+    .settings-card {
+        background-color: #212529;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 30px;
+    }
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #495057;
+        transition: .4s;
+        border-radius: 30px;
+    }
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 22px;
+        width: 22px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+    input:checked + .toggle-slider {
+        background-color: #FF5E00;
+    }
+    input:checked + .toggle-slider:before {
+        transform: translateX(30px);
+    }
+    .stats-card {
+        background-color: #212529;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        height: 100%;
+    }
+    .stats-icon {
+        font-size: 24px;
+        width: 50px;
+        height: 50px;
+        border-radius: 8px;
+        background-color: rgba(255, 94, 0, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #FF5E00;
+        margin-right: 15px;
+    }
+    .action-log {
+        background-color: #212529;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .log-item {
+        padding: 15px;
+        border-radius: 8px;
+        background-color: #343a40;
+        margin-bottom: 10px;
+    }
+    .log-item:last-child {
+        margin-bottom: 0;
+    }
+    .log-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: rgba(255, 94, 0, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #FF5E00;
+        margin-right: 15px;
+    }
+    .log-time {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+    .feature-card {
+        background-color: #212529;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        height: 100%;
+    }
+    .feature-icon {
+        font-size: 30px;
+        color: #FF5E00;
+        margin-bottom: 15px;
+    }
+    .range-container {
+        display: flex;
+        align-items: center;
+    }
+    .range-value {
+        width: 50px;
+        text-align: center;
+        margin-left: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4">
+            <i class="fas fa-robot text-ez-primary me-2"></i> Restaurant Bot Manager
+        </h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="bot-header d-flex align-items-center">
+            <div class="bot-avatar me-4">
+                <i class="fas fa-robot"></i>
+            </div>
+            <div>
+                <h3 class="mb-1">Chef Bot</h3>
+                <p class="text-ez-gray mb-2">Your AI-powered restaurant assistant</p>
+                <div>
+                    <span class="badge bg-success me-2"><i class="fas fa-circle me-1"></i> Active</span>
+                    <span class="text-ez-gray">Last update: Today at 9:30 AM</span>
+                </div>
+            </div>
+            <div class="ms-auto">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="bot-toggle" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+        
+        <div class="settings-card">
+            <h5 class="mb-4">Bot Settings</h5>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h6 class="mb-1">Auto-Accept Orders</h6>
+                            <p class="text-ez-gray mb-0 small">Automatically accept new orders as they arrive</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="auto-accept-toggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h6 class="mb-1">Auto-Ready Notification</h6>
+                            <p class="text-ez-gray mb-0 small">Automatically mark orders as ready after estimated time</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="auto-ready-toggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <h6 class="mb-1">Estimated Preparation Time</h6>
+                        <p class="text-ez-gray mb-2 small">Time before orders are automatically marked as ready</p>
+                        <div class="range-container">
+                            <input type="range" class="form-range" min="5" max="30" step="5" id="prep-time" value="15">
+                            <div class="range-value">15 min</div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h6 class="mb-1">Customer Notifications</h6>
+                        <p class="text-ez-gray mb-2 small">Send automatic updates to customers</p>
+                        <select class="form-select form-select-sm" id="notification-frequency">
+                            <option value="all">All Status Changes</option>
+                            <option value="major" selected>Major Status Changes</option>
+                            <option value="minimal">Minimal (Order Ready Only)</option>
+                            <option value="none">None</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="d-flex justify-content-end">
+                <button class="btn btn-ez-primary" id="save-settings">
+                    <i class="fas fa-save me-1"></i> Save Settings
+                </button>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="stats-card">
+                    <h5 class="mb-3">Today's Stats</h5>
+                    
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="stats-icon">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <div>
+                            <div class="text-ez-gray">Orders Processed</div>
+                            <div class="fs-4 fw-bold">45</div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="stats-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div>
+                            <div class="text-ez-gray">Avg. Processing Time</div>
+                            <div class="fs-4 fw-bold">1.2 min</div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon">
+                            <i class="fas fa-thumbs-up"></i>
+                        </div>
+                        <div>
+                            <div class="text-ez-gray">Customer Satisfaction</div>
+                            <div class="fs-4 fw-bold">98%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="stats-card">
+                    <h5 class="mb-3">Current Status</h5>
+                    
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="stats-icon">
+                            <i class="fas fa-hourglass-half"></i>
+                        </div>
+                        <div>
+                            <div class="text-ez-gray">Pending Orders</div>
+                            <div class="fs-4 fw-bold">3</div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="stats-icon">
+                            <i class="fas fa-utensils"></i>
+                        </div>
+                        <div>
+                            <div class="text-ez-gray">Preparing Orders</div>
+                            <div class="fs-4 fw-bold">5</div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div>
+                            <div class="text-ez-gray">Ready for Pickup</div>
+                            <div class="fs-4 fw-bold">2</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="action-log">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">Recent Bot Activity</h5>
+                <button class="btn btn-sm btn-dark">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+            
+            <div class="log-container">
+                <div class="log-item">
+                    <div class="d-flex">
+                        <div class="log-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold">Order #1234 Accepted</div>
+                            <div class="text-ez-gray">Order automatically accepted and moved to preparation.</div>
+                            <div class="log-time">5 minutes ago</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="log-item">
+                    <div class="d-flex">
+                        <div class="log-icon">
+                            <i class="fas fa-bell"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold">Customer Notification Sent</div>
+                            <div class="text-ez-gray">Order #1230 is ready for pickup. Customer notified.</div>
+                            <div class="log-time">12 minutes ago</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="log-item">
+                    <div class="d-flex">
+                        <div class="log-icon">
+                            <i class="fas fa-utensils"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold">Order #1230 Ready</div>
+                            <div class="text-ez-gray">Order marked as ready for pickup after 15 minutes.</div>
+                            <div class="log-time">12 minutes ago</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="log-item">
+                    <div class="d-flex">
+                        <div class="log-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold">Order #1230 Accepted</div>
+                            <div class="text-ez-gray">Order automatically accepted and moved to preparation.</div>
+                            <div class="log-time">27 minutes ago</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="log-item">
+                    <div class="d-flex">
+                        <div class="log-icon">
+                            <i class="fas fa-sync-alt"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold">Bot Settings Updated</div>
+                            <div class="text-ez-gray">Preparation time updated to 15 minutes.</div>
+                            <div class="log-time">1 hour ago</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-3">
+                <a href="#" class="text-ez-gray small">View All Activity <i class="fas fa-chevron-right ms-1"></i></a>
+            </div>
+        </div>
+        
+        <div class="feature-card text-center">
+            <div class="feature-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <h5>Performance Analytics</h5>
+            <p class="text-ez-gray mb-4">Detailed reports on your restaurant's performance</p>
+            <button class="btn btn-sm btn-outline-ez-primary">
+                <i class="fas fa-chart-bar me-1"></i> View Reports
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-2">
+    <div class="col-md-4">
+        <div class="feature-card text-center h-100">
+            <div class="feature-icon">
+                <i class="fas fa-magic"></i>
+            </div>
+            <h5>Smart Menu Optimization</h5>
+            <p class="text-ez-gray">Let AI analyze your menu performance and suggest optimizations</p>
+            <button class="btn btn-sm btn-outline-ez-primary">
+                <i class="fas fa-lightbulb me-1"></i> Enable Menu AI
+            </button>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="feature-card text-center h-100">
+            <div class="feature-icon">
+                <i class="fas fa-comment-dots"></i>
+            </div>
+            <h5>Customer Chat Bot</h5>
+            <p class="text-ez-gray">Automated chat responses for common customer queries</p>
+            <button class="btn btn-sm btn-outline-ez-primary">
+                <i class="fas fa-comment-alt me-1"></i> Configure Chat Bot
+            </button>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="feature-card text-center h-100">
+            <div class="feature-icon">
+                <i class="fas fa-calendar-alt"></i>
+            </div>
+            <h5>Automated Scheduling</h5>
+            <p class="text-ez-gray">Set specific operating hours or special holiday timings</p>
+            <button class="btn btn-sm btn-outline-ez-primary">
+                <i class="fas fa-cog me-1"></i> Configure Schedule
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Range slider update
+        const prepTime = document.getElementById('prep-time');
+        const prepTimeValue = document.querySelector('.range-value');
+        
+        prepTime.addEventListener('input', function() {
+            prepTimeValue.textContent = this.value + ' min';
+        });
+        
+        // Save settings button
+        const saveButton = document.getElementById('save-settings');
+        saveButton.addEventListener('click', function() {
+            const botEnabled = document.getElementById('bot-toggle').checked;
+            const autoAccept = document.getElementById('auto-accept-toggle').checked;
+            const autoReady = document.getElementById('auto-ready-toggle').checked;
+            const prepTime = document.getElementById('prep-time').value;
+            const notificationFrequency = document.getElementById('notification-frequency').value;
+            
+            // Show saving state
+            this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Saving...';
+            this.disabled = true;
+            
+            // Mock API call to save settings
+            setTimeout(() => {
+                // In a real app, you would send these settings to your backend
+                console.log('Saved settings:', {
+                    botEnabled, autoAccept, autoReady, prepTime, notificationFrequency
+                });
+                
+                // Update button state
+                this.innerHTML = '<i class="fas fa-check me-1"></i> Saved!';
+                
+                // Reset button after a delay
+                setTimeout(() => {
+                    this.innerHTML = '<i class="fas fa-save me-1"></i> Save Settings';
+                    this.disabled = false;
+                }, 1500);
+                
+                // Show toast notification
+                const toastHTML = `
+                    <div class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                        <div class="d-flex">
+                            <div class="toast-body">
+                                <i class="fas fa-check-circle me-2"></i> Bot settings updated successfully!
+                            </div>
+                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                        </div>
+                    </div>
+                `;
+                
+                const toastContainer = document.getElementById('toast-container');
+                toastContainer.innerHTML = toastHTML;
+                
+                const toast = new bootstrap.Toast(toastContainer.querySelector('.toast'));
+                toast.show();
+                
+            }, 1500);
+        });
+        
+        // Bot toggle
+        const botToggle = document.getElementById('bot-toggle');
+        botToggle.addEventListener('change', function() {
+            if (this.checked) {
+                // Bot enabled
+                document.querySelector('.bot-avatar').style.backgroundColor = '#FF5E00';
+                document.querySelector('.badge').classList.remove('bg-danger');
+                document.querySelector('.badge').classList.add('bg-success');
+                document.querySelector('.badge').innerHTML = '<i class="fas fa-circle me-1"></i> Active';
+            } else {
+                // Bot disabled
+                document.querySelector('.bot-avatar').style.backgroundColor = '#6c757d';
+                document.querySelector('.badge').classList.remove('bg-success');
+                document.querySelector('.badge').classList.add('bg-danger');
+                document.querySelector('.badge').innerHTML = '<i class="fas fa-circle me-1"></i> Inactive';
+            }
+        });
+    });
+</script>
+{% endblock %}
