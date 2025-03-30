@@ -990,8 +990,8 @@ def create_checkout_session():
             line_items=line_items,
             mode='payment',
             customer_email=current_user.email,
-            success_url=domain_url + url_for('stripe_success'),
-            cancel_url=domain_url + url_for('stripe_cancel'),
+            success_url=domain_url + '/stripe-success',
+            cancel_url=domain_url + '/stripe-cancel',
             metadata={
                 'user_id': current_user.id,
                 'restaurant_id': restaurant_id,
@@ -1008,7 +1008,7 @@ def create_checkout_session():
         flash('Payment processing error. Please try again.', 'danger')
         return redirect(url_for('cart'))
 
-@app.route('/stripe/success')
+@app.route('/stripe-success')
 @login_required
 @allowed_roles(['customer'])
 def stripe_success():
@@ -1060,7 +1060,7 @@ def stripe_success():
     flash('Payment successful! Your order has been placed.', 'success')
     return redirect(url_for('order_details', order_id=order.id))
 
-@app.route('/stripe/cancel')
+@app.route('/stripe-cancel')
 @login_required
 @allowed_roles(['customer'])
 def stripe_cancel():
