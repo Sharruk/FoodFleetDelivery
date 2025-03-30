@@ -45,9 +45,14 @@
                                 <i class="fas fa-store me-1"></i> Restaurant
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('restaurant_bot') }}">
+                                <i class="fas fa-robot me-1"></i> Bot Manager
+                            </a>
+                        </li>
                         {% elif current_user.role == 'delivery' %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('delivery_dashboard') }}">
+                            <a class="nav-link" href="{{ url_for('enhanced_delivery_dashboard') }}">
                                 <i class="fas fa-motorcycle me-1"></i> Deliveries
                             </a>
                         </li>
@@ -78,6 +83,11 @@
                                 <li>
                                     <a class="dropdown-item" href="{{ url_for('user_dashboard') }}">
                                         <i class="fas fa-tachometer-alt me-1"></i> Dashboard
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('payment_checkout') }}">
+                                        <i class="fas fa-credit-card me-1"></i> Quick Checkout
                                     </a>
                                 </li>
                                 {% elif current_user.role == 'restaurant' %}

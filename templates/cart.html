@@ -93,10 +93,20 @@
                     <span class="text-ez-primary" id="total">₹{{ total }}</span>
                 </div>
                 
-                <div class="d-grid">
+                <div class="d-grid gap-2">
                     <a href="{{ url_for('checkout') }}" class="btn btn-ez-primary">
                         <i class="fas fa-shopping-basket me-1"></i> Proceed to Checkout
                     </a>
+                    
+                    <div class="text-center my-2">
+                        <span class="text-muted">- OR -</span>
+                    </div>
+                    
+                    <form action="{{ url_for('create_checkout_session') }}" method="POST">
+                        <button type="submit" class="btn btn-outline-primary w-100">
+                            <i class="fab fa-stripe me-1"></i> Checkout with Stripe
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>

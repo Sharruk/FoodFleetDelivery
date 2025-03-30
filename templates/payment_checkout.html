@@ -1,424 +1,244 @@
 {% extends 'base.html' %}
 
-{% block title %}Payment - EZFOODZ{% endblock %}
-
-{% block styles %}
-<style>
-    .payment-method {
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 8px;
-        padding: 15px;
-        margin-bottom: 15px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-    .payment-method:hover {
-        background-color: rgba(255, 94, 0, 0.1);
-    }
-    .payment-method.active {
-        border-color: #FF5E00;
-        background-color: rgba(255, 94, 0, 0.15);
-    }
-    .payment-method .icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background-color: #212529;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-right: 15px;
-    }
-    .payment-method.active .icon {
-        background-color: #FF5E00;
-        color: white;
-    }
-    .payment-form {
-        padding: 20px;
-        border-radius: 8px;
-        background-color: #212529;
-        margin-bottom: 20px;
-    }
-    .card-input {
-        background-color: #343a40;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        color: white;
-        border-radius: 4px;
-        padding: 10px 15px;
-    }
-    .card-input:focus {
-        border-color: #FF5E00;
-        box-shadow: 0 0 0 0.2rem rgba(255, 94, 0, 0.25);
-        background-color: #343a40;
-        color: white;
-    }
-    .card-row {
-        display: flex;
-        gap: 15px;
-    }
-    .wallet-options {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 15px;
-        margin-top: 15px;
-    }
-    .wallet-option {
-        width: 90px;
-        height: 90px;
-        border-radius: 8px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-    .wallet-option:hover {
-        background-color: rgba(255, 94, 0, 0.1);
-    }
-    .wallet-option.selected {
-        border-color: #FF5E00;
-        background-color: rgba(255, 94, 0, 0.15);
-    }
-    .wallet-option img {
-        width: 40px;
-        height: 40px;
-        object-fit: contain;
-        margin-bottom: 8px;
-    }
-    .wallet-option span {
-        font-size: 0.8rem;
-    }
-    .payment-loading {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.7);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-        z-index: 9999;
-    }
-    .payment-success {
-        text-align: center;
-        padding: 30px;
-    }
-    .payment-success .check-icon {
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        background-color: #20c997;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 40px;
-        color: white;
-        margin: 0 auto 20px;
-    }
-    .payment-success h3 {
-        margin-bottom: 15px;
-    }
-    .secure-badge {
-        display: flex;
-        align-items: center;
-        font-size: 0.8rem;
-        color: #6c757d;
-        margin-top: 15px;
-    }
-    .secure-badge i {
-        margin-right: 5px;
-        color: #20c997;
-    }
-    .card-icons {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 20px;
-    }
-    .card-icons img {
-        height: 30px;
-        opacity: 0.7;
-    }
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="mb-4">
-            <h2 class="mb-1">
-                <i class="fas fa-credit-card text-ez-primary me-2"></i> Payment
-            </h2>
-            <p class="text-ez-gray">Choose your preferred payment method</p>
-        </div>
-        
-        <!-- Loading Overlay -->
-        <div id="payment-loading" class="payment-loading d-none">
-            <div class="spinner-border text-ez-primary mb-3" role="status">
-                <span class="visually-hidden">Loading...</span>
+<div class="row">
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-ez-dark text-white py-3">
+                <h5 class="mb-0">
+                    <i class="fas fa-credit-card me-2"></i> Payment Checkout
+                </h5>
             </div>
-            <h5 class="text-white">Processing Payment...</h5>
-            <p class="text-ez-gray">Please do not refresh the page</p>
-        </div>
-        
-        <!-- Payment Success -->
-        <div id="payment-success" class="payment-success d-none">
-            <div class="check-icon">
-                <i class="fas fa-check"></i>
-            </div>
-            <h3>Payment Successful!</h3>
-            <p class="text-ez-gray mb-4">Your order has been confirmed and is being processed.</p>
-            <div class="d-flex justify-content-center">
-                <div class="spinner-border spinner-border-sm text-ez-primary me-2" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <span>Redirecting to order details...</span>
-            </div>
-        </div>
-        
-        <div id="payment-container">
-            <div id="payment-errors"></div>
-            
-            <div class="row">
-                <div class="col-md-6">
-                    <!-- Payment Methods -->
-                    <h5 class="mb-3">Payment Method</h5>
+            <div class="card-body">
+                <div id="payment-alerts"></div>
+                
+                <form id="payment-form" method="POST" action="{{ url_for('payment_checkout') }}">
+                    {{ form.hidden_tag() }}
                     
-                    <div class="payment-method active" data-form="card-form" data-method="card">
-                        <div class="d-flex align-items-center">
-                            <div class="icon">
-                                <i class="fas fa-credit-card"></i>
-                            </div>
-                            <div>
-                                <div class="fw-bold">Credit/Debit Card</div>
-                                <div class="small text-muted">Visa, Mastercard, RuPay</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="payment-method" data-form="upi-form" data-method="upi">
-                        <div class="d-flex align-items-center">
-                            <div class="icon">
-                                <i class="fas fa-mobile-alt"></i>
-                            </div>
-                            <div>
-                                <div class="fw-bold">UPI</div>
-                                <div class="small text-muted">Google Pay, PhonePe, BHIM</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="payment-method" data-form="wallet-form" data-method="wallet">
-                        <div class="d-flex align-items-center">
-                            <div class="icon">
-                                <i class="fas fa-wallet"></i>
-                            </div>
-                            <div>
-                                <div class="fw-bold">Wallets</div>
-                                <div class="small text-muted">Paytm, Amazon Pay, Freecharge</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="payment-method" data-form="cod-form" data-method="cod">
-                        <div class="d-flex align-items-center">
-                            <div class="icon">
-                                <i class="fas fa-money-bill-wave"></i>
-                            </div>
-                            <div>
-                                <div class="fw-bold">Cash on Delivery</div>
-                                <div class="small text-muted">Pay when your order arrives</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Order Summary -->
-                    <div class="payment-form mt-4">
-                        <h5 class="mb-3">Order Summary</h5>
+                    <!-- Address Section -->
+                    <div class="mb-4">
+                        <h6 class="border-bottom pb-2 mb-3">Delivery Address</h6>
                         
-                        <div class="mb-3">
-                            <div class="text-muted mb-1">Restaurant</div>
-                            <div class="fw-bold">{{ restaurant.name }}</div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="use-profile-address" checked>
+                            <label class="form-check-label" for="use-profile-address">
+                                Use my profile address
+                            </label>
                         </div>
                         
-                        <div class="mb-3">
-                            <div class="text-muted mb-1">Items ({{ cart_items|length }})</div>
-                            {% for item in cart_items %}
-                                <div class="d-flex justify-content-between mb-1">
-                                    <div>{{ item.quantity }}x {{ item.name }}</div>
-                                    <div>₹{{ "%.2f"|format(item.price * item.quantity) }}</div>
+                        <div class="form-group">
+                            <textarea id="delivery-address" name="delivery_address" 
+                                    class="form-control" rows="3" readonly
+                                    data-profile-address="{{ current_user.address }}">{{ current_user.address }}</textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Payment Methods Section -->
+                    <div class="mb-4">
+                        <h6 class="border-bottom pb-2 mb-3">Payment Method</h6>
+                        
+                        <div class="payment-methods">
+                            <!-- Card Payment -->
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="radio" name="payment_method" id="payment-card" value="card">
+                                <label class="form-check-label d-flex align-items-center" for="payment-card">
+                                    <i class="fas fa-credit-card me-2 text-ez-primary"></i>
+                                    <span>Credit/Debit Card</span>
+                                    <span class="ms-auto">
+                                        <i class="fab fa-cc-visa mx-1 text-muted"></i>
+                                        <i class="fab fa-cc-mastercard mx-1 text-muted"></i>
+                                        <i class="fab fa-cc-amex mx-1 text-muted"></i>
+                                    </span>
+                                </label>
+                            </div>
+                            
+                            <!-- Card Payment Details -->
+                            <div id="card-details" class="payment-details ms-4 mb-4 p-3 border rounded d-none">
+                                <div class="mb-3">
+                                    <label for="card-number" class="form-label">Card Number</label>
+                                    <input type="text" class="form-control" id="card-number" placeholder="1234 5678 9012 3456">
                                 </div>
-                            {% endfor %}
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="card-expiry" class="form-label">Expiry Date</label>
+                                        <input type="text" class="form-control" id="card-expiry" placeholder="MM/YY">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="card-cvc" class="form-label">CVC</label>
+                                        <input type="text" class="form-control" id="card-cvc" placeholder="123">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="card-name" class="form-label">Name on Card</label>
+                                    <input type="text" class="form-control" id="card-name" placeholder="J. Smith">
+                                </div>
+                            </div>
+                            
+                            <!-- UPI Payment -->
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="radio" name="payment_method" id="payment-upi" value="upi">
+                                <label class="form-check-label d-flex align-items-center" for="payment-upi">
+                                    <i class="fas fa-mobile-alt me-2 text-ez-primary"></i>
+                                    <span>UPI Payment</span>
+                                    <span class="ms-auto">
+                                        <img src="{{ url_for('static', filename='img/bhim-upi.png') }}" alt="BHIM UPI" height="20" class="mx-1">
+                                        <img src="{{ url_for('static', filename='img/gpay.png') }}" alt="Google Pay" height="20" class="mx-1">
+                                    </span>
+                                </label>
+                            </div>
+                            
+                            <!-- UPI Payment Details -->
+                            <div id="upi-details" class="payment-details ms-4 mb-4 p-3 border rounded d-none">
+                                <div class="mb-3">
+                                    <label for="upi-id" class="form-label">UPI ID</label>
+                                    <input type="text" class="form-control" id="upi-id" placeholder="yourname@bank">
+                                </div>
+                                <small class="text-muted">You will receive a payment request on your UPI app.</small>
+                            </div>
+                            
+                            <!-- Wallet Payment -->
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="radio" name="payment_method" id="payment-wallet" value="wallet">
+                                <label class="form-check-label d-flex align-items-center" for="payment-wallet">
+                                    <i class="fas fa-wallet me-2 text-ez-primary"></i>
+                                    <span>Digital Wallet</span>
+                                    <span class="ms-auto">
+                                        <img src="{{ url_for('static', filename='img/paytm.png') }}" alt="Paytm" height="20" class="mx-1">
+                                        <img src="{{ url_for('static', filename='img/phonepe.png') }}" alt="PhonePe" height="20" class="mx-1">
+                                        <img src="{{ url_for('static', filename='img/amazon-pay.png') }}" alt="Amazon Pay" height="20" class="mx-1">
+                                    </span>
+                                </label>
+                            </div>
+                            
+                            <!-- Wallet Payment Details -->
+                            <div id="wallet-details" class="payment-details ms-4 mb-4 p-3 border rounded d-none">
+                                <div class="mb-3">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="wallet_provider" id="wallet-paytm" value="paytm">
+                                        <label class="form-check-label" for="wallet-paytm">Paytm</label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="wallet_provider" id="wallet-phonepe" value="phonepe">
+                                        <label class="form-check-label" for="wallet-phonepe">PhonePe</label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="wallet_provider" id="wallet-amazonpay" value="amazonpay">
+                                        <label class="form-check-label" for="wallet-amazonpay">Amazon Pay</label>
+                                    </div>
+                                </div>
+                                <small class="text-muted">You will be redirected to the selected wallet provider to complete the payment.</small>
+                            </div>
+                            
+                            <!-- Cash on Delivery -->
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="radio" name="payment_method" id="payment-cod" value="cod" checked>
+                                <label class="form-check-label d-flex align-items-center" for="payment-cod">
+                                    <i class="fas fa-money-bill-wave me-2 text-ez-primary"></i>
+                                    <span>Cash on Delivery</span>
+                                </label>
+                            </div>
+                            
+                            <!-- COD Payment Details -->
+                            <div id="cod-details" class="payment-details ms-4 mb-4 p-3 border rounded">
+                                <div class="text-muted">
+                                    <p class="mb-0">Pay with cash when your food is delivered.</p>
+                                    <small class="text-muted">Please keep exact change ready for contactless delivery.</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-ez-primary btn-lg w-100">
+                            <i class="fas fa-check-circle me-2"></i> Place Order
+                        </button>
+                        
+                        <div class="text-center my-3">
+                            <span class="text-muted">- OR -</span>
                         </div>
                         
-                        <hr class="border-secondary my-3">
-                        
-                        <div class="d-flex justify-content-between mb-1">
-                            <div>Subtotal</div>
-                            <div>₹{{ "%.2f"|format(subtotal) }}</div>
+                        <form action="{{ url_for('create_checkout_session') }}" method="POST" class="d-grid">
+                            <button type="submit" class="btn btn-outline-primary btn-lg">
+                                <i class="fab fa-stripe me-2"></i> Pay with Stripe
+                            </button>
+                        </form>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Order Summary -->
+        <div class="card border-0 shadow-sm mb-4 sticky-top" style="top: 20px; z-index: 10;">
+            <div class="card-header bg-ez-dark text-white py-3">
+                <h5 class="mb-0">
+                    <i class="fas fa-receipt me-2"></i> Order Summary
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Restaurant Info -->
+                <div class="d-flex align-items-center mb-3">
+                    <div class="flex-shrink-0">
+                        {% if restaurant.image_url %}
+                        <img src="{{ restaurant.image_url }}" alt="{{ restaurant.name }}" class="rounded" width="50" height="50">
+                        {% else %}
+                        <div class="rounded bg-ez-primary text-white d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="fas fa-utensils fa-lg"></i>
                         </div>
-                        <div class="d-flex justify-content-between mb-1">
-                            <div>Delivery Fee</div>
-                            <div>₹{{ "%.2f"|format(delivery_fee) }}</div>
-                        </div>
-                        <div class="d-flex justify-content-between mb-3">
-                            <div>Tax (5%)</div>
-                            <div>₹{{ "%.2f"|format(tax) }}</div>
-                        </div>
-                        
-                        <div class="d-flex justify-content-between fw-bold">
-                            <div>Total</div>
-                            <div>₹{{ "%.2f"|format(total) }}</div>
-                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="ms-3">
+                        <h6 class="mb-0">{{ restaurant.name }}</h6>
+                        <small class="text-muted">{{ restaurant.cuisine_type }}</small>
                     </div>
                 </div>
                 
-                <div class="col-md-6">
-                    <h5 class="mb-3">Payment Details</h5>
+                <hr>
+                
+                <!-- Order Items -->
+                <div class="order-items mb-3">
+                    {% for item in cart_items %}
+                    <div class="d-flex justify-content-between mb-2">
+                        <div>
+                            <span class="text-muted">{{ item.quantity }} × </span>
+                            <span>{{ item.name }}</span>
+                        </div>
+                        <span>₹{{ (item.price * item.quantity) | round(2) }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <hr>
+                
+                <!-- Order Totals -->
+                <div class="order-totals">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Subtotal</span>
+                        <span>₹{{ subtotal | round(2) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Delivery Fee</span>
+                        <span>₹{{ delivery_fee | round(2) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Tax (5%)</span>
+                        <span>₹{{ tax | round(2) }}</span>
+                    </div>
                     
-                    <form id="checkout-form" method="POST" action="{{ url_for('checkout') }}">
-                        {{ form.hidden_tag() }}
-                        <input type="hidden" id="payment_method" name="payment_method" value="card">
-                        
-                        <!-- Credit/Debit Card Form -->
-                        <div id="card-form" class="payment-form">
-                            <div class="card-icons">
-                                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/2560px-Visa_Inc._logo.svg.png" alt="Visa">
-                                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/1280px-Mastercard-logo.svg.png" alt="Mastercard">
-                                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/American_Express_logo_%282018%29.svg/1200px-American_Express_logo_%282018%29.svg.png" alt="American Express">
-                                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/RuPay.svg/1200px-RuPay.svg.png" alt="RuPay">
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="card_number" class="form-label">Card Number</label>
-                                <input type="text" class="form-control card-input" id="card_number" placeholder="1234 5678 9012 3456" maxlength="19">
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="card_name" class="form-label">Name on Card</label>
-                                <input type="text" class="form-control card-input" id="card_name" placeholder="John Doe">
-                            </div>
-                            
-                            <div class="row mb-3">
-                                <div class="col-6">
-                                    <label for="expiry_date" class="form-label">Expiry Date</label>
-                                    <input type="text" class="form-control card-input" id="expiry_date" placeholder="MM/YY" maxlength="5">
-                                </div>
-                                <div class="col-6">
-                                    <label for="cvv" class="form-label">CVV</label>
-                                    <input type="password" class="form-control card-input" id="cvv" placeholder="123" maxlength="3">
-                                </div>
-                            </div>
-                            
-                            <div class="secure-badge">
-                                <i class="fas fa-lock"></i>
-                                <span>Your payment information is secure. We use SSL encryption to protect your data.</span>
-                            </div>
-                        </div>
-                        
-                        <!-- UPI Form -->
-                        <div id="upi-form" class="payment-form d-none">
-                            <div class="mb-3">
-                                <p class="mb-3">
-                                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/UPI-Logo-vector.svg/1280px-UPI-Logo-vector.svg.png" alt="UPI" height="40">
-                                </p>
-                                
-                                <label for="upi_id" class="form-label">Enter UPI ID</label>
-                                <div class="input-group mb-3">
-                                    <input type="text" class="form-control card-input" id="upi_id" placeholder="username@bank">
-                                    <button class="btn btn-ez-primary" type="button" id="verify-upi">Verify</button>
-                                </div>
-                                <div class="text-muted small">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    UPI ID should be in the format username@bank (e.g., user@okaxis)
-                                </div>
-                            </div>
-                            
-                            <div class="mt-4">
-                                <p class="mb-2">Popular UPI Apps:</p>
-                                <div class="d-flex flex-wrap gap-3">
-                                    <div class="text-center">
-                                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/Google_Pay_Logo.svg/2560px-Google_Pay_Logo.svg.png" alt="Google Pay" height="30">
-                                        <div class="small text-muted mt-1">Google Pay</div>
-                                    </div>
-                                    <div class="text-center">
-                                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/PhonePe_Logo.png/640px-PhonePe_Logo.png" alt="PhonePe" height="30">
-                                        <div class="small text-muted mt-1">PhonePe</div>
-                                    </div>
-                                    <div class="text-center">
-                                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/BHIM_logo.svg/1280px-BHIM_logo.svg.png" alt="BHIM" height="30">
-                                        <div class="small text-muted mt-1">BHIM</div>
-                                    </div>
-                                    <div class="text-center">
-                                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Paytm_Logo_%28standalone%29.svg/1280px-Paytm_Logo_%28standalone%29.svg.png" alt="Paytm" height="30">
-                                        <div class="small text-muted mt-1">Paytm</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Wallet Form -->
-                        <div id="wallet-form" class="payment-form d-none">
-                            <input type="hidden" id="wallet_type" name="wallet_type" value="">
-                            
-                            <p class="mb-3">Select your preferred wallet:</p>
-                            
-                            <div class="wallet-options">
-                                <div class="wallet-option" data-wallet="paytm">
-                                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Paytm_Logo_%28standalone%29.svg/1280px-Paytm_Logo_%28standalone%29.svg.png" alt="Paytm">
-                                    <span>Paytm</span>
-                                </div>
-                                
-                                <div class="wallet-option" data-wallet="amazonpay">
-                                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/Amazon_pay_logo.svg/1280px-Amazon_pay_logo.svg.png" alt="Amazon Pay">
-                                    <span>Amazon Pay</span>
-                                </div>
-                                
-                                <div class="wallet-option" data-wallet="mobikwik">
-                                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/Mobikwik_logo.svg/1280px-Mobikwik_logo.svg.png" alt="MobiKwik">
-                                    <span>MobiKwik</span>
-                                </div>
-                                
-                                <div class="wallet-option" data-wallet="freecharge">
-                                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Freecharge_Logo_%282022%29.svg/1200px-Freecharge_Logo_%282022%29.svg.png" alt="Freecharge">
-                                    <span>Freecharge</span>
-                                </div>
-                                
-                                <div class="wallet-option" data-wallet="olamoney">
-                                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/29/Ola_Cabs_logo.svg/1024px-Ola_Cabs_logo.svg.png" alt="Ola Money">
-                                    <span>Ola Money</span>
-                                </div>
-                            </div>
-                            
-                            <div class="text-muted small mt-4">
-                                <i class="fas fa-info-circle me-1"></i>
-                                You will be redirected to the selected wallet for payment.
-                            </div>
-                        </div>
-                        
-                        <!-- Cash on Delivery Form -->
-                        <div id="cod-form" class="payment-form d-none">
-                            <div class="text-center mb-4">
-                                <i class="fas fa-money-bill-wave text-ez-primary fa-3x mb-3"></i>
-                                <h5>Cash on Delivery</h5>
-                                <p class="text-muted">Pay when your order arrives at your doorstep</p>
-                            </div>
-                            
-                            <div class="alert alert-warning">
-                                <i class="fas fa-exclamation-triangle me-2"></i>
-                                Please keep exact change ready for a smooth delivery experience.
-                            </div>
-                        </div>
-                        
-                        <div class="d-grid mt-4">
-                            <button type="button" id="pay-button" class="btn btn-ez-primary btn-lg">
-                                <i class="fas fa-lock me-2"></i> Pay ₹{{ "%.2f"|format(total) }}
-                            </button>
-                        </div>
-                    </form>
+                    <div class="d-flex justify-content-between fw-bold">
+                        <span>Total</span>
+                        <span class="text-ez-primary">₹{{ total | round(2) }}</span>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <!-- Estimated Delivery -->
+                <div class="text-center text-muted">
+                    <small>
+                        <i class="fas fa-clock me-1"></i> Estimated Delivery: 30-45 minutes
+                    </small>
                 </div>
             </div>
         </div>
@@ -428,4 +248,21 @@
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/payment.js') }}"></script>
+
+{% if session.pop('payment_success', False) %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const alertContainer = document.getElementById('payment-alerts');
+        if (alertContainer) {
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success alert-dismissible fade show';
+            alert.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i> Payment successful! Your order has been placed.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            alertContainer.appendChild(alert);
+        }
+    });
+</script>
+{% endif %}
 {% endblock %}

@@ -1,282 +1,179 @@
-/**
- * EZFOODZ Payment Processing System
- * Integrates multiple payment methods for checkout
- */
+// Stripe Payment Integration
 
-// Main payment handler
-const PaymentHandler = {
-    // Initialize payment forms
-    init: function() {
-        // Set up event listeners
-        this.setupEventListeners();
-        
-        // Initialize payment forms
-        this.initCreditCardForm();
-        this.initUPIForm();
-        this.initWalletForm();
-    },
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if we're on the payment checkout page
+    const paymentForm = document.getElementById('payment-form');
+    if (!paymentForm) return;
+
+    // Payment method selection
+    const paymentMethods = document.querySelectorAll('input[name="payment_method"]');
+    const paymentDetailsContainers = document.querySelectorAll('.payment-details');
+
+    // Toggle payment details sections based on selection
+    paymentMethods.forEach(method => {
+        method.addEventListener('change', function() {
+            const selectedMethod = this.value;
+            
+            // Hide all payment details sections
+            paymentDetailsContainers.forEach(container => {
+                container.classList.add('d-none');
+            });
+            
+            // Show the selected payment method details
+            const selectedContainer = document.getElementById(`${selectedMethod}-details`);
+            if (selectedContainer) {
+                selectedContainer.classList.remove('d-none');
+            }
+        });
+    });
+
+    // Address auto-fill toggle
+    const useProfileAddress = document.getElementById('use-profile-address');
+    const deliveryAddressField = document.getElementById('delivery-address');
+    const profileAddress = deliveryAddressField.getAttribute('data-profile-address');
     
-    // Set up event listeners
-    setupEventListeners: function() {
-        // Payment method selection
-        const paymentMethods = document.querySelectorAll('.payment-method');
-        if (paymentMethods) {
-            paymentMethods.forEach(method => {
-                method.addEventListener('click', function() {
-                    // Remove active class from all methods
-                    paymentMethods.forEach(m => m.classList.remove('active'));
-                    
-                    // Add active class to selected method
-                    this.classList.add('active');
-                    
-                    // Show corresponding form
-                    const formId = this.getAttribute('data-form');
-                    document.querySelectorAll('.payment-form').forEach(form => {
-                        form.classList.add('d-none');
-                    });
-                    
-                    document.getElementById(formId).classList.remove('d-none');
-                    
-                    // Update hidden input
-                    document.getElementById('payment_method').value = this.getAttribute('data-method');
-                });
-            });
-        }
+    if (useProfileAddress && deliveryAddressField && profileAddress) {
+        useProfileAddress.addEventListener('change', function() {
+            if (this.checked) {
+                deliveryAddressField.value = profileAddress;
+                deliveryAddressField.setAttribute('readonly', true);
+            } else {
+                deliveryAddressField.removeAttribute('readonly');
+            }
+        });
+    }
+
+    // Validate payment form before submission
+    paymentForm.addEventListener('submit', function(event) {
+        const selectedPaymentMethod = document.querySelector('input[name="payment_method"]:checked');
         
-        // Initialize payment button
-        const paymentButton = document.getElementById('pay-button');
-        if (paymentButton) {
-            paymentButton.addEventListener('click', this.processPayment.bind(this));
-        }
-    },
-    
-    // Initialize credit card form with validation
-    initCreditCardForm: function() {
-        const ccForm = document.getElementById('card-form');
-        if (!ccForm) return;
-        
-        // Card number formatting
-        const cardNumber = document.getElementById('card_number');
-        if (cardNumber) {
-            cardNumber.addEventListener('input', function(e) {
-                // Remove non-digit characters
-                let value = e.target.value.replace(/\D/g, '');
-                
-                // Add spaces after every 4 digits
-                value = value.replace(/(\d{4})(?=\d)/g, '$1 ');
-                
-                // Limit to 19 characters (16 digits + 3 spaces)
-                value = value.substring(0, 19);
-                
-                e.target.value = value;
-            });
-        }
-        
-        // Expiry date formatting
-        const expiryDate = document.getElementById('expiry_date');
-        if (expiryDate) {
-            expiryDate.addEventListener('input', function(e) {
-                // Remove non-digit characters
-                let value = e.target.value.replace(/\D/g, '');
-                
-                // Add slash after 2 digits
-                if (value.length > 2) {
-                    value = value.substring(0, 2) + '/' + value.substring(2);
-                }
-                
-                // Limit to 5 characters (MM/YY)
-                value = value.substring(0, 5);
-                
-                e.target.value = value;
-            });
-        }
-        
-        // CVV validation
-        const cvv = document.getElementById('cvv');
-        if (cvv) {
-            cvv.addEventListener('input', function(e) {
-                // Remove non-digit characters
-                let value = e.target.value.replace(/\D/g, '');
-                
-                // Limit to 3 digits
-                value = value.substring(0, 3);
-                
-                e.target.value = value;
-            });
-        }
-    },
-    
-    // Initialize UPI form
-    initUPIForm: function() {
-        const upiForm = document.getElementById('upi-form');
-        if (!upiForm) return;
-        
-        // UPI ID validation
-        const upiId = document.getElementById('upi_id');
-        if (upiId) {
-            upiId.addEventListener('input', function(e) {
-                // Convert to lowercase
-                e.target.value = e.target.value.toLowerCase();
-            });
-        }
-    },
-    
-    // Initialize wallet form
-    initWalletForm: function() {
-        const walletForm = document.getElementById('wallet-form');
-        if (!walletForm) return;
-        
-        // Wallet selection
-        const walletOptions = document.querySelectorAll('.wallet-option');
-        if (walletOptions) {
-            walletOptions.forEach(option => {
-                option.addEventListener('click', function() {
-                    // Remove active class from all options
-                    walletOptions.forEach(o => o.classList.remove('selected'));
-                    
-                    // Add active class to selected option
-                    this.classList.add('selected');
-                    
-                    // Update hidden input
-                    document.getElementById('wallet_type').value = this.getAttribute('data-wallet');
-                });
-            });
-        }
-    },
-    
-    // Process payment
-    processPayment: function(e) {
-        e.preventDefault();
-        
-        // Show loading
-        this.showLoading();
-        
-        // Get selected payment method
-        const paymentMethod = document.getElementById('payment_method').value;
-        
-        // Validate payment data
-        if (!this.validatePaymentData(paymentMethod)) {
-            this.hideLoading();
+        if (!selectedPaymentMethod) {
+            event.preventDefault();
+            showAlert('Please select a payment method', 'danger');
             return;
         }
+
+        const method = selectedPaymentMethod.value;
         
-        // Simulate payment processing
-        setTimeout(() => {
-            // In a real application, this would be an API call to a payment processor
-            
-            // For demo purposes, generate a random success or failure
-            const success = Math.random() > 0.2; // 80% success rate
-            
-            if (success) {
-                this.onPaymentSuccess();
-            } else {
-                this.onPaymentError('Transaction declined by bank. Please try another payment method.');
-            }
-        }, 2000);
-    },
-    
-    // Validate payment data
-    validatePaymentData: function(method) {
-        let isValid = true;
-        const errorContainer = document.getElementById('payment-errors');
-        errorContainer.innerHTML = '';
-        
+        // Validate card payment fields if selected
         if (method === 'card') {
-            // Validate card details
-            const cardNumber = document.getElementById('card_number').value.replace(/\s/g, '');
-            const cardName = document.getElementById('card_name').value;
-            const expiryDate = document.getElementById('expiry_date').value;
-            const cvv = document.getElementById('cvv').value;
+            const cardNumber = document.getElementById('card-number');
+            const cardExpiry = document.getElementById('card-expiry');
+            const cardCvc = document.getElementById('card-cvc');
             
-            if (cardNumber.length !== 16) {
-                this.showError('Please enter a valid 16-digit card number');
-                isValid = false;
+            if (cardNumber && cardExpiry && cardCvc) {
+                if (!validateCardNumber(cardNumber.value)) {
+                    event.preventDefault();
+                    showAlert('Please enter a valid card number', 'danger');
+                    return;
+                }
+                
+                if (!validateCardExpiry(cardExpiry.value)) {
+                    event.preventDefault();
+                    showAlert('Please enter a valid expiry date (MM/YY)', 'danger');
+                    return;
+                }
+                
+                if (!validateCardCVC(cardCvc.value)) {
+                    event.preventDefault();
+                    showAlert('Please enter a valid CVC code', 'danger');
+                    return;
+                }
             }
-            
-            if (!cardName.trim()) {
-                this.showError('Please enter the name on card');
-                isValid = false;
-            }
-            
-            if (expiryDate.length !== 5 || !expiryDate.includes('/')) {
-                this.showError('Please enter a valid expiry date (MM/YY)');
-                isValid = false;
-            }
-            
-            if (cvv.length !== 3) {
-                this.showError('Please enter a valid 3-digit CVV');
-                isValid = false;
-            }
-        } else if (method === 'upi') {
-            // Validate UPI ID
-            const upiId = document.getElementById('upi_id').value;
-            
-            if (!upiId.includes('@') || upiId.split('@').length !== 2) {
-                this.showError('Please enter a valid UPI ID (example: user@bank)');
-                isValid = false;
-            }
-        } else if (method === 'wallet') {
-            // Validate wallet selection
-            const walletType = document.getElementById('wallet_type').value;
-            
-            if (!walletType) {
-                this.showError('Please select a wallet');
-                isValid = false;
-            }
-        } else if (method === 'cod') {
-            // No validation needed for COD
         }
         
-        return isValid;
-    },
-    
-    // Show error message
-    showError: function(message) {
-        const errorContainer = document.getElementById('payment-errors');
-        const errorElement = document.createElement('div');
-        errorElement.className = 'alert alert-danger mb-3';
-        errorElement.textContent = message;
-        errorContainer.appendChild(errorElement);
-    },
-    
-    // Show loading overlay
-    showLoading: function() {
-        document.getElementById('payment-loading').classList.remove('d-none');
-        document.getElementById('pay-button').disabled = true;
-    },
-    
-    // Hide loading overlay
-    hideLoading: function() {
-        document.getElementById('payment-loading').classList.add('d-none');
-        document.getElementById('pay-button').disabled = false;
-    },
-    
-    // Handle successful payment
-    onPaymentSuccess: function() {
-        // Hide loading
-        this.hideLoading();
+        // Validate UPI ID if UPI is selected
+        if (method === 'upi') {
+            const upiId = document.getElementById('upi-id');
+            if (upiId && !validateUpiId(upiId.value)) {
+                event.preventDefault();
+                showAlert('Please enter a valid UPI ID', 'danger');
+                return;
+            }
+        }
         
-        // Show success message
-        document.getElementById('payment-success').classList.remove('d-none');
-        document.getElementById('payment-container').classList.add('d-none');
-        
-        // Submit the form to complete the order
-        setTimeout(() => {
-            document.getElementById('checkout-form').submit();
-        }, 1500);
-    },
-    
-    // Handle payment error
-    onPaymentError: function(message) {
-        // Hide loading
-        this.hideLoading();
-        
-        // Show error message
-        this.showError(message);
-    }
-};
+        // Add loading state to submit button
+        const submitButton = this.querySelector('button[type="submit"]');
+        if (submitButton) {
+            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+            submitButton.disabled = true;
+        }
+    });
 
-// Initialize payment handler when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
-    PaymentHandler.init();
+    // Helper functions for validation
+    function validateCardNumber(cardNumber) {
+        const regex = /^[0-9]{13,19}$/;
+        return regex.test(cardNumber.replace(/\s/g, ''));
+    }
+    
+    function validateCardExpiry(expiry) {
+        const regex = /^(0[1-9]|1[0-2])\/([0-9]{2})$/;
+        return regex.test(expiry);
+    }
+    
+    function validateCardCVC(cvc) {
+        const regex = /^[0-9]{3,4}$/;
+        return regex.test(cvc);
+    }
+    
+    function validateUpiId(upiId) {
+        const regex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+$/;
+        return regex.test(upiId);
+    }
+    
+    function showAlert(message, type = 'info') {
+        const alertContainer = document.getElementById('payment-alerts');
+        if (!alertContainer) return;
+        
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type} alert-dismissible fade show`;
+        alert.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        alertContainer.appendChild(alert);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            const bsAlert = new bootstrap.Alert(alert);
+            bsAlert.close();
+        }, 5000);
+    }
+
+    // Format card number with spaces
+    const cardNumberInput = document.getElementById('card-number');
+    if (cardNumberInput) {
+        cardNumberInput.addEventListener('input', function() {
+            let value = this.value.replace(/\D/g, '');
+            if (value.length > 16) value = value.slice(0, 16);
+            
+            // Add spaces every 4 digits
+            let formattedValue = '';
+            for (let i = 0; i < value.length; i++) {
+                if (i > 0 && i % 4 === 0) {
+                    formattedValue += ' ';
+                }
+                formattedValue += value[i];
+            }
+            
+            this.value = formattedValue;
+        });
+    }
+
+    // Format card expiry with slash
+    const cardExpiryInput = document.getElementById('card-expiry');
+    if (cardExpiryInput) {
+        cardExpiryInput.addEventListener('input', function() {
+            let value = this.value.replace(/\D/g, '');
+            if (value.length > 4) value = value.slice(0, 4);
+            
+            // Add slash after first 2 digits
+            if (value.length > 2) {
+                this.value = value.slice(0, 2) + '/' + value.slice(2);
+            } else {
+                this.value = value;
+            }
+        });
+    }
 });
